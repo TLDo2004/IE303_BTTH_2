@@ -197,10 +197,6 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
             pipe.draw(g);
         }
 
-        // Draw grass at the bottom
-        g.setColor(Color.green);
-        g.fillRect(0, 554, 360, 120);
-
         g.setColor(Color.BLACK);
         g.setFont(new Font("Arial", Font.BOLD, 20));
         g.drawString("Score: " + score, 20, 30);
