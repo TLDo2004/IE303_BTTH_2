@@ -67,18 +67,21 @@ class Pipe {
     private static final int WIDTH = 60;
     private static final int HEIGHT = 400;
     private static final int GAP = 150;
-    private static int SPEED = 3;
-    private BufferedImage topPipeImage, bottomPipeImage;
+    private static int SPEED = 5;
+    private static BufferedImage topPipeImage, bottomPipeImage;
 
-    public Pipe(int startX) {
-        x = startX;
-        resetHeight();
+    public static void loadImages() {
         try {
             topPipeImage = ImageIO.read(new File("toppipe.png"));
             bottomPipeImage = ImageIO.read(new File("bottompipe.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public Pipe(int startX) {
+        x = startX;
+        resetHeight();
     }
 
     private void resetHeight() {
@@ -89,11 +92,15 @@ class Pipe {
 
     public void move() {
         x -= SPEED;
-        SPEED += 0.01;
+        SPEED += 0.1;
     }
 
     public boolean isOffScreen() {
         return x + WIDTH < 0;
+    }
+
+    public boolean isPassed(int birdX) {
+        return x + WIDTH < birdX;
     }
 
     public void reset(int startX) {
@@ -130,6 +137,7 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
     private ArrayList<Pipe> pipes;
     private boolean gameOver;
     private int score;
+    private boolean scoreUpdated = false;
     private BufferedImage backgroundImage;
     private boolean gameStarted = false;
 
@@ -138,6 +146,7 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
         setBackground(Color.CYAN);
         addKeyListener(this);
         setFocusable(true);
+        Pipe.loadImages();
 
         try {
             backgroundImage = ImageIO.read(new File("flappybirdbg.png"));
@@ -146,15 +155,13 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
         }
 
         initGame();
-        timer = new Timer(20, this);
+        timer = new Timer(16, this);
     }
 
     private void initGame() {
         bird = new Bird(80, 290);
         pipes = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
-            pipes.add(new Pipe(400 + i * 200));
-        }
+        pipes.add(new Pipe(400)); // Start with one pipe
         gameOver = false;
         score = 0;
         gameStarted = false;
@@ -164,13 +171,31 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
     public void actionPerformed(ActionEvent e) {
         if (!gameOver) {
             bird.update();
-            for (Pipe pipe : pipes) {
+
+            // Update pipes
+            for (int i = 0; i < pipes.size(); i++) {
+                Pipe pipe = pipes.get(i);
                 pipe.move();
-                if (pipe.isOffScreen()) {
-                    pipe.reset(600);
+
+                // Check if the pipe is passed
+                if (pipe.isPassed(bird.getX()) && !scoreUpdated) {
                     score++;
+                    scoreUpdated = true;
+                }
+
+                // Remove off-screen pipes
+                if (pipe.isOffScreen()) {
+                    pipes.remove(i);
+                    i--; // Adjust index after removal
+                    scoreUpdated = false;
                 }
             }
+
+            // Add a new pipe if the last pipe is far enough
+            if (pipes.size() > 0 && pipes.get(pipes.size() - 1).getX() < 200) {
+                pipes.add(new Pipe(400));
+            }
+
             checkCollision();
             repaint();
         }
@@ -213,14 +238,17 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-            if (!gameStarted) {
+        if (!gameStarted) {
+            if (e.getKeyCode() == KeyEvent.VK_ENTER || e.getKeyCode() == KeyEvent.VK_SPACE) {
                 gameStarted = true;
                 timer.start();
             }
         }
-        if (e.getKeyCode() == KeyEvent.VK_SPACE && !gameOver) {
-            bird.jump();
+
+        if (gameStarted && !gameOver) {
+            if (e.getKeyCode() == KeyEvent.VK_SPACE || e.getKeyCode() == KeyEvent.VK_ENTER) {
+                bird.jump();
+            }
         }
         if (e.getKeyCode() == KeyEvent.VK_R && gameOver) {
             resetGame();
@@ -230,10 +258,8 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
     private void resetGame() {
         initGame();
         bird.reset();
-        for (int i = 0; i < pipes.size(); i++) {
-            pipes.get(i).reset(400 + i * 200);
-            pipes.get(i).setSpeed(3);
-        }
+        pipes.clear();
+        pipes.add(new Pipe(400)); // Start with one pipe
         repaint();
     }
 
