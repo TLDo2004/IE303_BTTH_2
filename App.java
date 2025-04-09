@@ -67,7 +67,7 @@ class Pipe {
     private static final int WIDTH = 60;
     private static final int HEIGHT = 400;
     private static final int GAP = 150;
-    private static int SPEED = 5;
+    private static int SPEED = 3;
     private static BufferedImage topPipeImage, bottomPipeImage;
 
     public static void loadImages() {
@@ -92,7 +92,7 @@ class Pipe {
 
     public void move() {
         x -= SPEED;
-        SPEED += 0.1;
+        SPEED += 0.001;
     }
 
     public boolean isOffScreen() {
@@ -101,11 +101,6 @@ class Pipe {
 
     public boolean isPassed(int birdX) {
         return x + WIDTH < birdX;
-    }
-
-    public void reset(int startX) {
-        x = startX;
-        resetHeight();
     }
 
     public void draw(Graphics g) {
